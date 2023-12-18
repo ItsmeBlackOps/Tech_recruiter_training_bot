@@ -125,7 +125,7 @@ def generate_and_display_answer(question):
     st.write(f"Answer: {answer}")
 
 
-pdf_content = read_pdf('1678899842229.pdf')
+pdf_content = read_pdf('https://github.com/ItsmeBlackOps/Tech_recruiter_training_bot/blob/main/1678899842229.pdf')
 qa_bot = QuestionAnswerBot(pdf_content)
 
 def main():
