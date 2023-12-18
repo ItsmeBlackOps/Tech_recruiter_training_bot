@@ -129,32 +129,76 @@ pdf_content = read_pdf('1678899842229.pdf')
 qa_bot = QuestionAnswerBot(pdf_content)
 
 def main():
-    st.title("Context-Aware PDF Question Answer Bot")
+    st.title("Bench Sales Recruiter Training Bot")
     st.write("PDF content has been loaded. You can now ask questions based on the PDF:")
+    
+
+    custom_css = """
+    <style>
+    button[kind="primary"].fixed-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button[kind="primary"].fixed-button:hover {
+        background-color: #0056b3;
+    }
+
+    </style>
+    """
+
+
+
+    # Apply custom CSS
+    st.markdown(custom_css, unsafe_allow_html=True)
+
+    # Create Streamlit app with sidebar
+    st.sidebar.title("Sidebar")
+
+    # Define buttons
+    clear_input_button = st.sidebar.button('Clear Input', type="primary")
+    clear_output_button = st.sidebar.button('Clear Output', type="primary")
+    clear_both_button = st.sidebar.button('Clear Both', type="primary")
+
+    # Define actions when buttons are clicked
+    if clear_input_button:
+        st.session_state['question'] = ''
+    if clear_output_button:
+        st.session_state['history'] = []
+    if clear_both_button:
+        st.session_state['question'] = ''
+        st.session_state['history'] = []
+
+
+    # Suggested prompts
+    suggested_prompts = ["What is the main topic of the PDF?", "Summarize the first chapter.", "List the key points discussed."]
 
     # Initialize conversation history in session state if not already present
     if 'history' not in st.session_state:
         st.session_state['history'] = []
 
-    question = st.text_input("Ask a question:")
-    if question and st.button("Ask", key="ask_button"):
-        answer = qa_bot.generate_answer(question)
+    # Handle suggested prompt button click
+    for prompt in suggested_prompts:
+        if st.button(f"Suggested: {prompt}"):
+            st.session_state['question'] = prompt
+            generate_and_display_answer(prompt)
+            break
 
-        # If the answer is not satisfactory, ask the generative AI model
-        if "I'm sorry, I don't have enough information to answer that question accurately." in answer:
-            # Append the current question to the history for context
-            history = st.session_state['history'] + [{"role": "user", "parts": question}]
-            convo = genai_model.start_chat(history=history)
-            convo.send_message(question)
-            answer = convo.last.text
-            # Update the history with the model's response
-            st.session_state['history'].append({"role": "model", "parts": answer})
-        else:
-            # Update the history with both question and answer
-            st.session_state['history'].append({"role": "user", "parts": question})
-            st.session_state['history'].append({"role": "model", "parts": answer})
+    # Text input for the question
+    question = st.text_input("Ask a question:", value=st.session_state.get('question', ''), key="question")
 
-        st.write(f"Answer: {answer}")
+    # Check if the Ask button was clicked
+    if st.button("Ask", key="ask_button"):
+        if question:
+            generate_and_display_answer(question)
+            st.session_state['question'] = ''  # Clear the input box after processing
+
 
 if __name__ == "__main__":
     main()
