@@ -69,6 +69,13 @@ def read_pdf(pdf_path):
             pdf_content += page.extract_text() or ""
     return pdf_content
 
+def handle_question_input():
+    question = st.session_state.get('question', '')
+    if question:
+        st.session_state['questions_asked'].append(question)
+        generate_and_display_answer(question)
+        st.session_state['question'] = ''  # Clear the input box after processing
+
 # Google Generative AI configuration
 genai.configure(api_key="AIzaSyDLQehxg9kSK5MqCI1N0GiDrcT9Re-XV-c")
 
@@ -90,6 +97,32 @@ genai_model = genai.GenerativeModel(model_name="gemini-pro",
                                     generation_config=generation_config,
                                     safety_settings=safety_settings)
 
+def generate_and_display_answer(question):
+    answer = qa_bot.generate_answer(question)
+
+    # If the answer is not satisfactory, ask the generative AI model
+    if "I'm sorry, I don't have enough information to answer that question accurately." in answer:
+        # Append the current question to the history for context
+        history = st.session_state['history'] + [{"role": "user", "parts": question}]
+        
+        # Check and manage history length for the Google Generative AI model
+        total_words = sum(len(entry["parts"].split()) for entry in history)
+        if total_words > 30000:
+            history = [{"role": "user", "parts": question}]
+
+        convo = genai_model.start_chat(history=history)
+        convo.send_message(question)
+        answer = convo.last.text
+
+        # Update the history with the model's response
+        st.session_state['history'].append({"role": "model", "parts": answer})
+    else:
+        # Update the history with both question and answer
+        st.session_state['history'].append({"role": "user", "parts": question})
+        st.session_state['history'].append({"role": "model", "parts": answer})
+
+    # Display the answer
+    st.write(f"Answer: {answer}")
 
 
 pdf_content = read_pdf('1678899842229.pdf')
